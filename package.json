@@ -1,0 +1,19 @@
+{
+  "scripts": {
+    "start": "webpack-dev-server",
+    "build": "webpack"
+  },
+  "devDependencies": {
+    "@types/webpack-env": "latest",
+    "clean-webpack-plugin": "latest",
+    "gl-matrix": "latest",
+    "html-webpack-plugin": "latest",
+    "raw-loader": "latest",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest",
+    "webpack-dev-server": "latest"
+  },
+  "dependencies": {}
+}
