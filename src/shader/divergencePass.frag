@@ -1,26 +1,25 @@
 #version 300 es
 precision highp float;
 
+uniform vec2 texelSize;
 uniform sampler2D velocity;
 
-in vec2 vL;
-in vec2 vR;
-in vec2 vT;
-in vec2 vB;
-in vec2 fragCoord;
+in vec2 uv;
 out float outDivergence;
 
 void main () {
-    float L = texture(velocity, vL).x;
-    float R = texture(velocity, vR).x;
-    float T = texture(velocity, vT).y;
-    float B = texture(velocity, vB).y;
+    vec2 xOffset = vec2(texelSize.x, 0.0);
+    vec2 yOffset = vec2(0.0, texelSize.y);
+    float L = texture(velocity, uv - xOffset).y;
+    float R = texture(velocity, uv + xOffset).y;
+    float T = texture(velocity, uv + yOffset).x;
+    float B = texture(velocity, uv - yOffset).x;
 
-    vec2 C = texture(velocity, fragCoord).xy;
-    if (vL.x < 0.0) { L = -C.x; }
-    if (vR.x > 1.0) { R = -C.x; }
-    if (vT.y > 1.0) { T = -C.y; }
-    if (vB.y < 0.0) { B = -C.y; }
+    vec2 C = texture(velocity, uv).xy;
+    if (uv.x - xOffset.x < 0.0) { L = -C.x; }
+    if (uv.x + xOffset.x > 1.0) { R = -C.x; }
+    if (uv.y + yOffset.y > 1.0) { T = -C.y; }
+    if (uv.y - yOffset.y < 0.0) { B = -C.y; }
 
     outDivergence = 0.5 * (R - L + T - B);
 }

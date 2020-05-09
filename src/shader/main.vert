@@ -6,17 +6,9 @@ layout (location = 0) in vec2 position;
 uniform vec2 resolution;
 uniform vec2 texelSize;
 
-out vec2 fragCoord;
-out vec2 vL;
-out vec2 vR;
-out vec2 vT;
-out vec2 vB;
+out vec2 uv;
 
 void main() {
-    fragCoord = resolution * (position + 1.) / 2.;
-    vL = fragCoord - vec2(texelSize.x, 0.0);
-    vR = fragCoord + vec2(texelSize.x, 0.0);
-    vT = fragCoord + vec2(0.0, texelSize.y);
-    vB = fragCoord - vec2(0.0, texelSize.y);
+    uv = (position + 1.) / 2.;
     gl_Position = vec4(position, 0, 1);
 }

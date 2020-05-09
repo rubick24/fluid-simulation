@@ -67,19 +67,19 @@ let config = {
     CURL: 30,
     SPLAT_RADIUS: 0.25,
     SPLAT_FORCE: 6000,
-    SHADING: true,
-    COLORFUL: true,
+    SHADING: false,
+    COLORFUL: false,
     COLOR_UPDATE_SPEED: 10,
     PAUSED: false,
     BACK_COLOR: { r: 0, g: 0, b: 0 },
     TRANSPARENT: false,
-    BLOOM: true,
+    BLOOM: false,
     BLOOM_ITERATIONS: 8,
     BLOOM_RESOLUTION: 256,
     BLOOM_INTENSITY: 0.8,
     BLOOM_THRESHOLD: 0.6,
     BLOOM_SOFT_KNEE: 0.7,
-    SUNRAYS: true,
+    SUNRAYS: false,
     SUNRAYS_RESOLUTION: 196,
     SUNRAYS_WEIGHT: 1.0,
 }
@@ -1156,7 +1156,7 @@ function update () {
     applyInputs();
     if (!config.PAUSED)
         step(dt);
-    render(null);
+    // render(null);
     requestAnimationFrame(update);
 }
 
@@ -1209,6 +1209,7 @@ function step (dt) {
 
     curlProgram.bind();
     gl.uniform2f(curlProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
+
     gl.uniform1i(curlProgram.uniforms.uVelocity, velocity.read.attach(0));
     blit(curl.fbo);
 
@@ -1221,53 +1222,53 @@ function step (dt) {
     blit(velocity.write.fbo);
     velocity.swap();
 
-    divergenceProgram.bind();
-    gl.uniform2f(divergenceProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
-    gl.uniform1i(divergenceProgram.uniforms.uVelocity, velocity.read.attach(0));
-    blit(divergence.fbo);
+    // divergenceProgram.bind();
+    // gl.uniform2f(divergenceProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
+    // gl.uniform1i(divergenceProgram.uniforms.uVelocity, velocity.read.attach(0));
+    // blit(divergence.fbo);
 
-    clearProgram.bind();
-    gl.uniform1i(clearProgram.uniforms.uTexture, pressure.read.attach(0));
-    gl.uniform1f(clearProgram.uniforms.value, config.PRESSURE);
-    blit(pressure.write.fbo);
-    pressure.swap();
+    // clearProgram.bind();
+    // gl.uniform1i(clearProgram.uniforms.uTexture, pressure.read.attach(0));
+    // gl.uniform1f(clearProgram.uniforms.value, config.PRESSURE);
+    // blit(pressure.write.fbo);
+    // pressure.swap();
 
-    pressureProgram.bind();
-    gl.uniform2f(pressureProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
-    gl.uniform1i(pressureProgram.uniforms.uDivergence, divergence.attach(0));
-    for (let i = 0; i < config.PRESSURE_ITERATIONS; i++) {
-        gl.uniform1i(pressureProgram.uniforms.uPressure, pressure.read.attach(1));
-        blit(pressure.write.fbo);
-        pressure.swap();
-    }
+    // pressureProgram.bind();
+    // gl.uniform2f(pressureProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
+    // gl.uniform1i(pressureProgram.uniforms.uDivergence, divergence.attach(0));
+    // for (let i = 0; i < config.PRESSURE_ITERATIONS; i++) {
+    //     gl.uniform1i(pressureProgram.uniforms.uPressure, pressure.read.attach(1));
+    //     blit(pressure.write.fbo);
+    //     pressure.swap();
+    // }
 
-    gradienSubtractProgram.bind();
-    gl.uniform2f(gradienSubtractProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
-    gl.uniform1i(gradienSubtractProgram.uniforms.uPressure, pressure.read.attach(0));
-    gl.uniform1i(gradienSubtractProgram.uniforms.uVelocity, velocity.read.attach(1));
-    blit(velocity.write.fbo);
-    velocity.swap();
+    // gradienSubtractProgram.bind();
+    // gl.uniform2f(gradienSubtractProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
+    // gl.uniform1i(gradienSubtractProgram.uniforms.uPressure, pressure.read.attach(0));
+    // gl.uniform1i(gradienSubtractProgram.uniforms.uVelocity, velocity.read.attach(1));
+    // blit(velocity.write.fbo);
+    // velocity.swap();
 
     advectionProgram.bind();
-    gl.uniform2f(advectionProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
-    if (!ext.supportLinearFiltering)
-        gl.uniform2f(advectionProgram.uniforms.dyeTexelSize, velocity.texelSizeX, velocity.texelSizeY);
-    let velocityId = velocity.read.attach(0);
-    gl.uniform1i(advectionProgram.uniforms.uVelocity, velocityId);
-    gl.uniform1i(advectionProgram.uniforms.uSource, velocityId);
-    gl.uniform1f(advectionProgram.uniforms.dt, dt);
-    gl.uniform1f(advectionProgram.uniforms.dissipation, config.VELOCITY_DISSIPATION);
-    blit(velocity.write.fbo);
-    velocity.swap();
+    // gl.uniform2f(advectionProgram.uniforms.texelSize, velocity.texelSizeX, velocity.texelSizeY);
+    // if (!ext.supportLinearFiltering)
+    //     gl.uniform2f(advectionProgram.uniforms.dyeTexelSize, velocity.texelSizeX, velocity.texelSizeY);
+    // let velocityId = velocity.read.attach(0);
+    // gl.uniform1i(advectionProgram.uniforms.uVelocity, velocityId);
+    // gl.uniform1i(advectionProgram.uniforms.uSource, velocityId);
+    // gl.uniform1f(advectionProgram.uniforms.dt, dt);
+    // gl.uniform1f(advectionProgram.uniforms.dissipation, config.VELOCITY_DISSIPATION);
+    // blit(velocity.write.fbo);
+    // velocity.swap();
 
     gl.viewport(0, 0, dye.width, dye.height);
 
-    if (!ext.supportLinearFiltering)
-        gl.uniform2f(advectionProgram.uniforms.dyeTexelSize, dye.texelSizeX, dye.texelSizeY);
+    // if (!ext.supportLinearFiltering)
+    //     gl.uniform2f(advectionProgram.uniforms.dyeTexelSize, dye.texelSizeX, dye.texelSizeY);
     gl.uniform1i(advectionProgram.uniforms.uVelocity, velocity.read.attach(0));
-    gl.uniform1i(advectionProgram.uniforms.uSource, dye.read.attach(1));
+    gl.uniform1i(advectionProgram.uniforms.uSource, velocity.read.attach(1));
     gl.uniform1f(advectionProgram.uniforms.dissipation, config.DENSITY_DISSIPATION);
-    blit(dye.write.fbo);
+    blit(null);
     dye.swap();
 }
 
@@ -1315,7 +1316,7 @@ function drawDisplay (fbo, width, height) {
     displayMaterial.bind();
     if (config.SHADING)
         gl.uniform2f(displayMaterial.uniforms.texelSize, 1.0 / width, 1.0 / height);
-    gl.uniform1i(displayMaterial.uniforms.uTexture, dye.read.attach(0));
+    gl.uniform1i(displayMaterial.uniforms.uTexture, velocity.read.attach(0));
     if (config.BLOOM) {
         gl.uniform1i(displayMaterial.uniforms.uBloom, bloom.attach(1));
         gl.uniform1i(displayMaterial.uniforms.uDithering, ditheringTexture.attach(2));

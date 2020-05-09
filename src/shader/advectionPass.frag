@@ -9,7 +9,7 @@ uniform vec2 texelSize;
 uniform float dt;
 uniform float dissipation;
 
-in vec2 fragCoord;
+in vec2 uv;
 out vec4 outTex;
 
 // vec4 bilerp (sampler2D sam, vec2 uv, vec2 tsize) {
@@ -25,11 +25,11 @@ out vec4 outTex;
 
 void main () {
     // #ifdef MANUAL_FILTERING
-    // vec2 coord = fragCoord - dt * bilerp(uVelocity, fragCoord, texelSize).xy * texelSize;
+    // vec2 coord = uv - dt * bilerp(uVelocity, uv, texelSize).xy * texelSize;
     // vec4 result = bilerp(uSource, coord, dyeTexelSize);
     // #else
     // #endif
-    vec2 coord = fragCoord - dt * texture(uVelocity, fragCoord).xy * texelSize;
+    vec2 coord = uv - dt * texture(uVelocity, uv).xy * texelSize;
     vec4 result = texture(uSource, coord);
 
     float decay = 1.0 + dissipation * dt;

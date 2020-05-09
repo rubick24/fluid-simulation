@@ -3,6 +3,8 @@ export interface IMouseInput {
   y: number
   lastX: number
   lastY: number
+  innerX: number
+  innerY: number
   draging: boolean
   wheel: number
   lastWheel: number
@@ -10,15 +12,18 @@ export interface IMouseInput {
 
 export default class DesktopInput {
   public lockPointer: boolean = false
+  public updateRate: number = 100 //ms
   public currentlyPressedKeys: Map<string, boolean>
   public mouseInput: IMouseInput
   private raf = 0
-  private t = performance.now()
 
-  constructor(public el: HTMLElement, options?: { lockPointer?: boolean }) {
+  constructor(public el: HTMLElement, options?: { lockPointer?: boolean, updateRate?: number}) {
     if (options) {
       if (options.lockPointer !== undefined) {
         this.lockPointer = options.lockPointer
+      }
+      if (options.updateRate !== undefined) {
+        this.updateRate = options.updateRate
       }
     }
 
@@ -28,6 +33,8 @@ export default class DesktopInput {
       y: 0,
       lastX: 0,
       lastY: 0,
+      innerX: 0,
+      innerY: 0,
       draging: false,
       wheel: 0,
       lastWheel: 0
@@ -41,8 +48,8 @@ export default class DesktopInput {
     }
 
     const handleMouseMove = (e: MouseEvent) => {
-      this.mouseInput.x = e.screenX
-      this.mouseInput.y = e.screenY
+      this.mouseInput.innerX = e.clientX
+      this.mouseInput.innerY = e.clientY
     }
     const handleWheel = (e: WheelEvent) => {
       this.mouseInput.wheel += e.deltaY
@@ -60,12 +67,14 @@ export default class DesktopInput {
       el.addEventListener('mousedown', handleDragStart)
       el.addEventListener('mouseup', handleDragEnd)
       el.addEventListener('wheel', handleWheel)
-      const af = () => {
-        const now = performance.now()
-        if (now - this.t > 100) {
-          this.t = now
+      let lastT = 0
+      const af = (t: number) => {
+        if (t - lastT > this.updateRate) {
+          lastT = t
           this.mouseInput.lastX = this.mouseInput.x
           this.mouseInput.lastY = this.mouseInput.y
+          this.mouseInput.x = this.mouseInput.innerX
+          this.mouseInput.y = this.mouseInput.innerY
           this.mouseInput.lastWheel = this.mouseInput.wheel
         }
         requestAnimationFrame(af)
