@@ -11,7 +11,7 @@ uniform float dt;
 uniform float dissipation;
 
 in vec2 uv;
-out vec2 outVelocity;
+out vec4 outDye;
 
 // vec4 bilerp (sampler2D sam, vec2 uv, vec2 tsize) {
 //     vec2 st = uv / tsize - 0.5;
@@ -27,11 +27,11 @@ out vec2 outVelocity;
 void main () {
 
     // vec2 coord = uv - dt * bilerp(uVelocity, uv, texelSize).xy * texelSize;
-    // vec4 result = bilerp(uSource, coord, uv/resolution);
+    // vec4 result = bilerp(uSource, coord, dyeTexelSize);
 
     vec2 coord = uv - dt * texture(uVelocity, uv).xy * texelSize;
-    vec2 result = texture(uSource, coord).xy;
+    vec4 result = texture(uSource, coord);
 
     float decay = 1.0 + dissipation * dt;
-    outVelocity = result.xy / decay;
+    outDye = result / decay;
 }

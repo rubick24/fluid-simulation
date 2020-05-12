@@ -3,9 +3,6 @@ precision highp float;
 
 layout (location = 0) in vec2 position;
 
-uniform vec2 resolution;
-uniform vec2 texelSize;
-
 out vec2 uv;
 
 void main() {

@@ -5,6 +5,7 @@ import Shader from './shader'
 import vsSource from './shader/main.vert'
 
 import splatPassSource from './shader/splatPass.frag'
+import splatDyePassSource from './shader/splatDyePass.frag'
 import curlPassSource from './shader/curlPass.frag'
 import vorticityPassSource from './shader/vorticityPass.frag'
 import divergencePassSource from './shader/divergencePass.frag'
@@ -12,6 +13,7 @@ import clearPassSource from './shader/clearPass.frag'
 import pressurePassSource from './shader/pressurePass.frag'
 import gradientSubtractPassSource from './shader/gradientSubtractPass.frag'
 import advectionPassSource from './shader/advectionPass.frag'
+import advectionDyePassSource from './shader/advectionDyePass.frag'
 import displayPassSource from './shader/displayPass.frag'
 
 // basic setup
@@ -26,7 +28,6 @@ gl.clearColor(0, 0, 0, 0)
 gl.getExtension('EXT_color_buffer_float')
 // gl.getExtension('OES_texture_float_linear')
 
-gl.viewport(0, 0, canvas.width, canvas.height)
 const di = new DesktopInput(canvas, { updateRate: 1 })
 const ti = new TouchInput(canvas)
 
@@ -102,40 +103,61 @@ const pressure = createDoubleFBO({size: 1, resolution: { width: texelRes[0], hei
 
 // input, velocity => velocity
 const splatPass = (() => {
-  const splatShader = new Shader(gl, vsSource, splatPassSource)
-  splatShader.use()
-  splatShader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
-  splatShader.setUniform('texelSize', 'VEC2', texelSize)
+  const shader = new Shader(gl, vsSource, splatPassSource)
+  shader.use()
+  shader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
+  shader.setUniform('texelSize', 'VEC2', texelSize)
   return () => {
-    splatShader.use()
+    gl.bindFramebuffer(gl.FRAMEBUFFER, velocity.fb)
+    shader.use()
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, velocity.tex)
 
-    splatShader.setUniform('pressed', 'BOOLEAN', di.mouseInput.draging)
+    shader.setUniform('pressed', 'BOOLEAN', di.mouseInput.draging)
 
     const cursor = [di.mouseInput.x / canvas.clientHeight, 1 - di.mouseInput.y / canvas.clientHeight]
-    splatShader.setUniform('cursor', 'VEC2', cursor)
+    shader.setUniform('cursor', 'VEC2', cursor)
 
     const force = [di.mouseInput.x - di.mouseInput.lastX, di.mouseInput.lastY - di.mouseInput.y]
-    splatShader.setUniform('force', 'VEC2', force)
+    shader.setUniform('force', 'VEC2', force)
 
-    gl.bindFramebuffer(gl.FRAMEBUFFER, velocity.fb)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     velocity.swap()
   }
 })()
 
+// input, dye => dye
+const splatDyePass = (() => {
+  const shader = new Shader(gl, vsSource, splatDyePassSource)
+  shader.use()
+  shader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
+  return () => {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, dye.fb)
+    shader.use()
+    gl.activeTexture(gl.TEXTURE0)
+    gl.bindTexture(gl.TEXTURE_2D, dye.tex)
+    const cursor = [di.mouseInput.x / canvas.clientHeight, 1 - di.mouseInput.y / canvas.clientHeight]
+    shader.setUniform('cursor', 'VEC2', cursor)
+    shader.setUniform('pressed', 'BOOLEAN', di.mouseInput.draging)
+    shader.setUniform('color', 'VEC3', [0, 0.5, 1])
+
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+    dye.swap()
+  }
+})()
+
+
 // velocity => vorticity
 const curlPass = (() => {
-  const curlShader = new Shader(gl, vsSource, curlPassSource)
-  curlShader.use()
-  curlShader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
-  curlShader.setUniform('texelSize', 'VEC2', texelSize)
+  const shader = new Shader(gl, vsSource, curlPassSource)
+  shader.use()
+  shader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
+  shader.setUniform('texelSize', 'VEC2', texelSize)
   return () => {
-    curlShader.use()
+    gl.bindFramebuffer(gl.FRAMEBUFFER, vorticity.fb)
+    shader.use()
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, velocity.tex)
-    gl.bindFramebuffer(gl.FRAMEBUFFER, vorticity.fb)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
   }
 })()
@@ -143,23 +165,23 @@ const curlPass = (() => {
 
 // velocity, vorticity => velocity
 const vorticityPass = (() => {
-  const vorticityShader = new Shader(gl, vsSource, vorticityPassSource)
-  vorticityShader.use()
-  vorticityShader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
-  vorticityShader.setUniform('texelSize', 'VEC2', texelSize)
+  const shader = new Shader(gl, vsSource, vorticityPassSource)
+  shader.use()
+  shader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
+  shader.setUniform('texelSize', 'VEC2', texelSize)
   return (dt: number) => {
-    vorticityShader.use()
+    gl.bindFramebuffer(gl.FRAMEBUFFER, velocity.fb)
+    shader.use()
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, velocity.tex)
-    vorticityShader.setUniform('velocity', 'INT', 0)
+    shader.setUniform('velocity', 'INT', 0)
     gl.activeTexture(gl.TEXTURE1)
     gl.bindTexture(gl.TEXTURE_2D, vorticity.tex)
-    vorticityShader.setUniform('vorticity', 'INT', 1)
+    shader.setUniform('vorticity', 'INT', 1)
 
-    vorticityShader.setUniform('curl', 'FLOAT', 25) // vorticity 0 - 50
-    vorticityShader.setUniform('dt', 'FLOAT', dt/1000.)
+    shader.setUniform('curl', 'FLOAT', 25) // vorticity 0 - 50
+    shader.setUniform('dt', 'FLOAT', dt)
 
-    gl.bindFramebuffer(gl.FRAMEBUFFER, velocity.fb)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     velocity.swap()
   }
@@ -167,33 +189,32 @@ const vorticityPass = (() => {
 
 // velocity => divergence
 const divergencePass = (() => {
-  const divergenceShader = new Shader(gl, vsSource, divergencePassSource)
-  divergenceShader.use()
-  divergenceShader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
-  divergenceShader.setUniform('texelSize', 'VEC2', texelSize)
+  const shader = new Shader(gl, vsSource, divergencePassSource)
+  shader.use()
+  shader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
+  shader.setUniform('texelSize', 'VEC2', texelSize)
 
   return () => {
-    divergenceShader.use()
+    gl.bindFramebuffer(gl.FRAMEBUFFER, divergence.fb)
+    shader.use()
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, velocity.tex)
-    gl.bindFramebuffer(gl.FRAMEBUFFER, divergence.fb)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
   }
 })()
 
 // pressure => pressure
 const clearPass = (() => {
-  const clearShader = new Shader(gl, vsSource, clearPassSource)
-  clearShader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
-  clearShader.setUniform('texelSize', 'VEC2', texelSize)
+  const shader = new Shader(gl, vsSource, clearPassSource)
+  shader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
+  shader.setUniform('texelSize', 'VEC2', texelSize)
   return () => {
-    clearShader.use()
+    gl.bindFramebuffer(gl.FRAMEBUFFER, pressure.fb)
+    shader.use()
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, pressure.tex)
+    shader.setUniform('value', 'FLOAT', 0.8) // config.PRESSURE
 
-    clearShader.setUniform('value', 'FLOAT', 0.8) // config.PRESSURE
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER, pressure.fb)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     pressure.swap()
   }
@@ -201,20 +222,21 @@ const clearPass = (() => {
 
  // pressure, divergence => pressure
 const pressurePass = (() => {
-  const presureShader = new Shader(gl, vsSource, pressurePassSource)
-  presureShader.use()
-  presureShader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
-  presureShader.setUniform('texelSize', 'VEC2', texelSize)
-  gl.activeTexture(gl.TEXTURE0)
-  gl.bindTexture(gl.TEXTURE_2D, divergence.tex)
-  presureShader.setUniform('uDivergence', 'INT', 0)
+  const shader = new Shader(gl, vsSource, pressurePassSource)
+  shader.use()
+  shader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
+  shader.setUniform('texelSize', 'VEC2', texelSize)
+
   return () => {
     for (let i = 0; i<20; i++) {
-      presureShader.use()
+      gl.bindFramebuffer(gl.FRAMEBUFFER, pressure.fb)
+      shader.use()
+      gl.activeTexture(gl.TEXTURE0)
+      gl.bindTexture(gl.TEXTURE_2D, divergence.tex)
+      shader.setUniform('uDivergence', 'INT', 0)
       gl.activeTexture(gl.TEXTURE1)
       gl.bindTexture(gl.TEXTURE_2D, pressure.tex)
-      presureShader.setUniform('uPressure', 'INT', 1)
-      gl.bindFramebuffer(gl.FRAMEBUFFER, pressure.fb)
+      shader.setUniform('uPressure', 'INT', 1)
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
       pressure.swap()
     }
@@ -223,70 +245,78 @@ const pressurePass = (() => {
 
 // pressure,velocity => velocity
 const gradientSubtractPass = (() => {
-  const gradienSubtractShader = new Shader(gl, vsSource, gradientSubtractPassSource)
-  gradienSubtractShader.use()
-  gradienSubtractShader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
-  gradienSubtractShader.setUniform('texelSize', 'VEC2', texelSize)
+  const shader = new Shader(gl, vsSource, gradientSubtractPassSource)
+  shader.use()
+  shader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
+  shader.setUniform('texelSize', 'VEC2', texelSize)
 
   return () => {
-    gradienSubtractShader.use()
+    gl.bindFramebuffer(gl.FRAMEBUFFER, velocity.fb)
+    shader.use()
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, pressure.tex)
-    gradienSubtractShader.setUniform('uPressure', 'INT', 0)
+    shader.setUniform('uPressure', 'INT', 0)
     gl.activeTexture(gl.TEXTURE1)
     gl.bindTexture(gl.TEXTURE_2D, velocity.tex)
-    gradienSubtractShader.setUniform('uVelocity', 'INT', 1)
+    shader.setUniform('uVelocity', 'INT', 1)
 
-    gl.bindFramebuffer(gl.FRAMEBUFFER, velocity.fb)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     velocity.swap()
   }
 })()
 
 // velocity => velocity
-// velocity,dye => dye
 const advectionPass = (() => {
-  const advectionShader = new Shader(gl, vsSource, advectionPassSource)
-  advectionShader.use()
-  advectionShader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
-  advectionShader.setUniform('texelSize', 'VEC2', texelSize)
+  const shader = new Shader(gl, vsSource, advectionPassSource)
+  shader.use()
+  shader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
+  shader.setUniform('texelSize', 'VEC2', texelSize)
   return (dt: number) => {
-    advectionShader.use()
+    gl.bindFramebuffer(gl.FRAMEBUFFER, velocity.fb)
+    shader.use()
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, velocity.tex)
 
-    advectionShader.setUniform('dt', 'FLOAT', dt)
-    advectionShader.setUniform('dissipation', 'FLOAT', 1)
+    shader.setUniform('dt', 'FLOAT', dt)
+    shader.setUniform('dissipation', 'FLOAT', 1)
 
-    gl.bindFramebuffer(gl.FRAMEBUFFER, velocity.fb)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     velocity.swap()
+  }
+})()
 
-
-    // gl.activeTexture(gl.TEXTURE0)
-    // gl.bindTexture(gl.TEXTURE_2D, velocity.tex)
-    // advectionShader.setUniform('uVelocity', 'INT', 0)
-    // gl.activeTexture(gl.TEXTURE1)
-    // gl.bindTexture(gl.TEXTURE_2D, dye.tex)
-    // advectionShader.setUniform('uSource', 'INT', 0)
-    // advectionShader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
-    // advectionShader.setUniform('texelSize', 'VEC2', texelSize)
-    // advectionShader.setUniform('dt', 'FLOAT', dt)
-    // advectionShader.setUniform('dissipation', 'FLOAT', 1)
-
+// velocity,dye => dye
+const advectionDyePass = (() => {
+  const shader = new Shader(gl, vsSource, advectionDyePassSource)
+  shader.use()
+  shader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
+  shader.setUniform('texelSize', 'VEC2', texelSize)
+  return (dt: number) => {
     gl.bindFramebuffer(gl.FRAMEBUFFER, dye.fb)
+    shader.use()
+    gl.activeTexture(gl.TEXTURE0)
+    gl.bindTexture(gl.TEXTURE_2D, velocity.tex)
+    shader.setUniform('uVelocity', 'INT', 0)
+    gl.activeTexture(gl.TEXTURE1)
+    gl.bindTexture(gl.TEXTURE_2D, dye.tex)
+    shader.setUniform('uSource', 'INT', 1)
+    shader.setUniform('dt', 'FLOAT', dt)
+    shader.setUniform('dissipation', 'FLOAT', 1)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     dye.swap()
   }
 })()
 
+
+
+
 const displayPass = (() => {
-  const displayShader = new Shader(gl, vsSource, displayPassSource)
-  displayShader.use()
-  displayShader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
+  const shader = new Shader(gl, vsSource, displayPassSource)
+  shader.use()
+  shader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
   return (target: WebGLTexture | null) => {
 
-    displayShader.use()
+    shader.use()
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, target)
     gl.bindFramebuffer(gl.FRAMEBUFFER, null)
@@ -298,25 +328,29 @@ let lastTime = 0
 let dt = 0
 const renderLoop = (time: number) => {
   dt = time -  lastTime
+  dt /= 1000
   lastTime = time
 
   gl.viewport(0, 0, texelRes[0], texelRes[1])
   splatPass()
-
+  gl.viewport(0, 0, canvas.clientWidth, canvas.clientHeight)
+  splatDyePass()
+  gl.viewport(0, 0, texelRes[0], texelRes[1])
   curlPass()
   vorticityPass(dt)
 
-  // divergencePass()
-  // clearPass()
-  // pressurePass()
-  // gradientSubtractPass()
-  // advectionPass(dt)
+  divergencePass()
+  clearPass()
+  pressurePass()
+  gradientSubtractPass()
+  advectionPass(dt)
+
 
 
   gl.viewport(0, 0, canvas.clientWidth, canvas.clientHeight)
-
-  // velocity  vorticity  pressure  divergence  dye
-  displayPass(velocity.tex)
+  advectionDyePass(dt)
+  // velocity  vorticity  divergence  pressure  dye
+  displayPass(dye.tex)
 
   requestAnimationFrame(renderLoop)
 }
