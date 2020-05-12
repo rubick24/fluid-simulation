@@ -9,6 +9,7 @@ import curlPassSource from './shader/curlPass.frag'
 import vorticityPassSource from './shader/vorticityPass.frag'
 import divergencePassSource from './shader/divergencePass.frag'
 import clearPassSource from './shader/clearPass.frag'
+import pressurePassSource from './shader/pressurePass.frag'
 import gradientSubtractPassSource from './shader/gradientSubtractPass.frag'
 import advectionPassSource from './shader/advectionPass.frag'
 import displayPassSource from './shader/displayPass.frag'
@@ -84,7 +85,8 @@ const createDoubleFBO = (c?: IFBOConfig) => {
   }
 }
 
-const texelRes = [128, 128]
+const r = canvas.clientHeight / canvas.clientWidth
+const texelRes = [128, 128 * r]
 const texelSize = texelRes.map(v => 1/v)
 
 const dye = createDoubleFBO()
@@ -104,7 +106,7 @@ const splatPass = (() => {
   splatShader.use()
   splatShader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
   splatShader.setUniform('texelSize', 'VEC2', texelSize)
-  return (dt: number) => {
+  return () => {
     splatShader.use()
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, velocity.tex)
@@ -155,7 +157,7 @@ const vorticityPass = (() => {
     vorticityShader.setUniform('vorticity', 'INT', 1)
 
     vorticityShader.setUniform('curl', 'FLOAT', 25) // vorticity 0 - 50
-    vorticityShader.setUniform('dt', 'FLOAT', dt)
+    vorticityShader.setUniform('dt', 'FLOAT', dt/1000.)
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, velocity.fb)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
@@ -199,7 +201,7 @@ const clearPass = (() => {
 
  // pressure, divergence => pressure
 const pressurePass = (() => {
-  const presureShader = new Shader(gl, vsSource, clearPassSource)
+  const presureShader = new Shader(gl, vsSource, pressurePassSource)
   presureShader.use()
   presureShader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
   presureShader.setUniform('texelSize', 'VEC2', texelSize)
@@ -299,7 +301,7 @@ const renderLoop = (time: number) => {
   lastTime = time
 
   gl.viewport(0, 0, texelRes[0], texelRes[1])
-  splatPass(dt)
+  splatPass()
 
   curlPass()
   vorticityPass(dt)
