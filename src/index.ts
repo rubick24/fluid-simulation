@@ -47,12 +47,14 @@ interface IFBOConfig {
   resolution?: {
     width: number, height: number
   }
+  linear?: boolean
 }
 
 const createFBO = (c?: IFBOConfig) => {
   const config = {...{
     size: 4,
-    resolution: { width: canvas.clientWidth, height: canvas.clientHeight }
+    resolution: { width: canvas.clientWidth, height: canvas.clientHeight },
+    linear: false
   }, ...c}
   const sizeFormatMap = [
     [gl.R32F, gl.RED],
@@ -64,8 +66,8 @@ const createFBO = (c?: IFBOConfig) => {
 
   const tex = gl.createTexture()
   gl.bindTexture(gl.TEXTURE_2D, tex)
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, config.linear ? gl.LINEAR : gl.NEAREST)
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, config.linear ?  gl.LINEAR : gl.NEAREST)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
   gl.texImage2D(gl.TEXTURE_2D, 0, internalformat, config.resolution.width, config.resolution.height, 0, format, gl.FLOAT, null)
@@ -90,8 +92,8 @@ const r = canvas.clientHeight / canvas.clientWidth
 const texelRes = [128, 128 * r]
 const texelSize = texelRes.map(v => 1/v)
 
-const dye = createDoubleFBO()
-const velocity = createDoubleFBO({size: 2, resolution: { width: texelRes[0], height: texelRes[1] }})
+const dye = createDoubleFBO({ linear: true })
+const velocity = createDoubleFBO({size: 2, resolution: { width: texelRes[0], height: texelRes[1] }, linear: true})
 const vorticity = createFBO({size: 1, resolution: { width: texelRes[0], height: texelRes[1] }})
 const divergence = createFBO({size: 1, resolution: { width: texelRes[0], height: texelRes[1] }})
 const pressure = createDoubleFBO({size: 1, resolution: { width: texelRes[0], height: texelRes[1] }})
@@ -144,7 +146,6 @@ const splatDyePass = (() => {
   }
 })()
 
-
 // velocity => vorticity
 const curlPass = (() => {
   const shader = new Shader(gl, vsSource, curlPassSource)
@@ -159,7 +160,6 @@ const curlPass = (() => {
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
   }
 })()
-
 
 // velocity, vorticity => velocity
 const vorticityPass = (() => {
@@ -304,9 +304,6 @@ const advectionDyePass = (() => {
     dye.swap()
   }
 })()
-
-
-
 
 const displayPass = (() => {
   const shader = new Shader(gl, vsSource, displayPassSource)
