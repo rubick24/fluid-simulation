@@ -7,6 +7,6 @@ in vec2 uv;
 out vec4 fragColor;
 
 void main () {
-    // fragColor = texture(uTarget, uv);
-    fragColor = (texture(uTarget, uv) + 1.)/2.;
+    fragColor = texture(uTarget, uv);
+    // fragColor = (texture(uTarget, uv) + 1.)/2.;
 }

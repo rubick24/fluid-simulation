@@ -26,7 +26,7 @@ if (!gl) {
 }
 gl.clearColor(0, 0, 0, 0)
 gl.getExtension('EXT_color_buffer_float')
-// gl.getExtension('OES_texture_float_linear')
+gl.getExtension('OES_texture_float_linear')
 
 const di = new DesktopInput(canvas, { updateRate: 1 })
 const ti = new TouchInput(canvas)
@@ -64,8 +64,8 @@ const createFBO = (c?: IFBOConfig) => {
 
   const tex = gl.createTexture()
   gl.bindTexture(gl.TEXTURE_2D, tex)
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
   gl.texImage2D(gl.TEXTURE_2D, 0, internalformat, config.resolution.width, config.resolution.height, 0, format, gl.FLOAT, null)
@@ -98,8 +98,6 @@ const pressure = createDoubleFBO({size: 1, resolution: { width: texelRes[0], hei
 
 
 // pass
-
-
 
 // input, velocity => velocity
 const splatPass = (() => {
@@ -345,10 +343,9 @@ const renderLoop = (time: number) => {
   gradientSubtractPass()
   advectionPass(dt)
 
-
-
   gl.viewport(0, 0, canvas.clientWidth, canvas.clientHeight)
   advectionDyePass(dt)
+
   // velocity  vorticity  divergence  pressure  dye
   displayPass(dye.tex)
 
