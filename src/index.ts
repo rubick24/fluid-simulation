@@ -1,6 +1,5 @@
 import DesktopInput from './input/DesktopInput'
 import TouchInput from './input/TouchInput'
-// import { vec3, mat4 } from 'gl-matrix'
 import Shader from './shader'
 import vsSource from './shader/main.vert'
 

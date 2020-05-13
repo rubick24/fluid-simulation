@@ -10,10 +10,10 @@ out float outDivergence;
 void main () {
     vec2 xOffset = vec2(texelSize.x, 0.0);
     vec2 yOffset = vec2(0.0, texelSize.y);
-    float L = texture(velocity, uv - xOffset).y;
-    float R = texture(velocity, uv + xOffset).y;
-    float T = texture(velocity, uv + yOffset).x;
-    float B = texture(velocity, uv - yOffset).x;
+    float L = texture(velocity, uv - xOffset).x;
+    float R = texture(velocity, uv + xOffset).x;
+    float T = texture(velocity, uv + yOffset).y;
+    float B = texture(velocity, uv - yOffset).y;
 
     vec2 C = texture(velocity, uv).xy;
     if (uv.x - xOffset.x < 0.0) { L = -C.x; }
