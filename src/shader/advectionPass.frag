@@ -2,7 +2,6 @@
 precision highp float;
 
 uniform sampler2D uVelocity;
-uniform sampler2D uSource;
 
 uniform vec2 resolution;
 uniform vec2 texelSize;
@@ -30,7 +29,7 @@ void main () {
     // vec4 result = bilerp(uSource, coord, uv/resolution);
 
     vec2 coord = uv - dt * texture(uVelocity, uv).xy * texelSize;
-    vec2 result = texture(uSource, coord).xy;
+    vec2 result = texture(uVelocity, coord).xy;
 
     float decay = 1.0 + dissipation * dt;
     outVelocity = result.xy / decay;

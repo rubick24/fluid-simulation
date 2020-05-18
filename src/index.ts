@@ -27,7 +27,7 @@ gl.clearColor(0, 0, 0, 0)
 gl.getExtension('EXT_color_buffer_float')
 gl.getExtension('OES_texture_float_linear')
 
-const di = new DesktopInput(canvas, { updateRate: 1 })
+const di = new DesktopInput(canvas)
 const ti = new TouchInput(canvas)
 
 // quad
@@ -87,9 +87,11 @@ const createDoubleFBO = (c?: IFBOConfig) => {
   }
 }
 
-const r = canvas.clientHeight / canvas.clientWidth
-const texelRes = [128, 128 * r]
-const texelSize = texelRes.map(v => 1/v)
+const r = canvas.clientWidth / canvas.clientHeight
+
+const simSize = 256
+const texelRes = [simSize * r, simSize]
+const texelSize = [ 1/(simSize * r), 1/simSize]
 
 const dye = createDoubleFBO({ linear: true })
 const velocity = createDoubleFBO({size: 2, resolution: { width: texelRes[0], height: texelRes[1] }, linear: true})
@@ -106,18 +108,15 @@ const splatPass = (() => {
   shader.use()
   shader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
   shader.setUniform('texelSize', 'VEC2', texelSize)
-  return () => {
+  return (pressed: boolean, cursor: number[], force: number[]) => {
     gl.bindFramebuffer(gl.FRAMEBUFFER, velocity.fb)
     shader.use()
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, velocity.tex)
 
-    shader.setUniform('pressed', 'BOOLEAN', di.mouseInput.draging)
+    shader.setUniform('pressed', 'BOOLEAN', pressed)
 
-    const cursor = [di.mouseInput.x / canvas.clientHeight, 1 - di.mouseInput.y / canvas.clientHeight]
     shader.setUniform('cursor', 'VEC2', cursor)
-
-    const force = [di.mouseInput.x - di.mouseInput.lastX, di.mouseInput.lastY - di.mouseInput.y]
     shader.setUniform('force', 'VEC2', force)
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
@@ -130,14 +129,13 @@ const splatDyePass = (() => {
   const shader = new Shader(gl, vsSource, splatDyePassSource)
   shader.use()
   shader.setUniform('resolution', 'VEC2', [canvas.clientWidth, canvas.clientHeight])
-  return () => {
+  return (pressed: boolean, cursor: number[]) => {
     gl.bindFramebuffer(gl.FRAMEBUFFER, dye.fb)
     shader.use()
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, dye.tex)
-    const cursor = [di.mouseInput.x / canvas.clientHeight, 1 - di.mouseInput.y / canvas.clientHeight]
     shader.setUniform('cursor', 'VEC2', cursor)
-    shader.setUniform('pressed', 'BOOLEAN', di.mouseInput.draging)
+    shader.setUniform('pressed', 'BOOLEAN', pressed)
     shader.setUniform('color', 'VEC3', [0, 0.5, 1])
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
@@ -298,7 +296,7 @@ const advectionDyePass = (() => {
     gl.bindTexture(gl.TEXTURE_2D, dye.tex)
     shader.setUniform('uSource', 'INT', 1)
     shader.setUniform('dt', 'FLOAT', dt)
-    shader.setUniform('dissipation', 'FLOAT', 1)
+    shader.setUniform('dissipation', 'FLOAT', 0.5)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     dye.swap()
   }
@@ -320,16 +318,27 @@ const displayPass = (() => {
 
 let lastTime = 0
 let dt = 0
+gl.viewport(0, 0, canvas.clientWidth, canvas.clientHeight)
 const renderLoop = (time: number) => {
-  dt = time -  lastTime
-  dt /= 1000
+  dt = (time -  lastTime) / 1000
   lastTime = time
 
+  let pressed = di.mouseInput.draging
+  let pos = [di.mouseInput.x, di.mouseInput.y]
+  let lastPos = [di.mouseInput.lastX, di.mouseInput.lastY]
+  if (ti.touchList[0] && ti.lastTouchList[0]) {
+    pressed = true
+    pos = [ti.touchList[0].clientX, ti.touchList[0].clientY]
+    lastPos = [ti.lastTouchList[0].clientX, ti.lastTouchList[0].clientY]
+  }
+
+  const cursor = [pos[0] / canvas.clientHeight, 1 - pos[1] / canvas.clientHeight]
+  const force = [pos[0] - lastPos[0], lastPos[1] - pos[1]]
+
+  splatDyePass(pressed, cursor)
+
   gl.viewport(0, 0, texelRes[0], texelRes[1])
-  splatPass()
-  gl.viewport(0, 0, canvas.clientWidth, canvas.clientHeight)
-  splatDyePass()
-  gl.viewport(0, 0, texelRes[0], texelRes[1])
+  splatPass(pressed, cursor, force)
   curlPass()
   vorticityPass(dt)
 

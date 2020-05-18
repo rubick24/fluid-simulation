@@ -17,8 +17,8 @@ void main () {
 
     vec2 p = nuv - cursor;
     vec2 base = texture(velocity, uv).xy;
-    float radius = 0.0002;
-    vec2 f = pressed < 1 ? vec2(0.) : force * 100.;
+    float radius = 0.0025;
+    vec2 f = pressed < 1 ? vec2(0.) : force * 10.;
     vec2 splat = vec2(exp(-dot(p, p) / radius)) * f;
     outVelocity = base + splat;
 }

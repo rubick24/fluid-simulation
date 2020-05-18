@@ -12,8 +12,8 @@ void main () {
 
     vec2 xOffset = vec2(texelSize.x, 0.0);
     vec2 yOffset = vec2(0.0, texelSize.y);
-    float L = texture(uPressure, uv - xOffset).y;
-    float R = texture(uPressure, uv + xOffset).y;
+    float L = texture(uPressure, uv - xOffset).x;
+    float R = texture(uPressure, uv + xOffset).x;
     float T = texture(uPressure, uv + yOffset).x;
     float B = texture(uPressure, uv - yOffset).x;
     float C = texture(uPressure, uv).x;

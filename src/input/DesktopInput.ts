@@ -12,7 +12,7 @@ export interface IMouseInput {
 
 export default class DesktopInput {
   public lockPointer: boolean = false
-  public updateRate: number = 100 //ms
+  public updateRate: number = 1000/60 //ms
   public currentlyPressedKeys: Map<string, boolean>
   public mouseInput: IMouseInput
   private raf = 0

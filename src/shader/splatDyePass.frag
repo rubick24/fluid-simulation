@@ -16,7 +16,7 @@ void main () {
 
     vec2 p = nuv - cursor;
     vec3 base = texture(dye, uv).xyz;
-    float radius = 0.0002;
+    float radius = 0.0025;
     vec3 c = pressed < 1 ? vec3(0.) : color;
     vec3 splat = exp(-dot(p, p) / radius) * c;
     outDye = vec4(base + splat, 1.);
