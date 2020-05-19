@@ -7,7 +7,7 @@ module.exports = {
 	entry: './src/index.ts',
 	output: {
 		filename: 'main.js',
-		path: path.resolve(__dirname, 'docs')
+		path: path.resolve(__dirname, 'dist')
   },
   resolve: {
     extensions: ['.wasm', '.mjs', '.js', '.json', '.ts', '.tsx']
