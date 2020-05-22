@@ -93,6 +93,13 @@ const simSize = 256
 const texelRes = [simSize * r, simSize]
 const texelSize = [ 1/(simSize * r), 1/simSize]
 
+const config = {
+  vorticity: 20, // 0 - 50
+  pressure: 0.8, // 0 - 1
+  dissipation: 1.,
+  dissipationDye: 0.8,
+}
+
 const dye = createDoubleFBO({ linear: true })
 const velocity = createDoubleFBO({size: 2, resolution: { width: texelRes[0], height: texelRes[1] }, linear: true})
 const vorticity = createFBO({size: 1, resolution: { width: texelRes[0], height: texelRes[1] }})
@@ -174,7 +181,7 @@ const vorticityPass = (() => {
     gl.bindTexture(gl.TEXTURE_2D, vorticity.tex)
     shader.setUniform('vorticity', 'INT', 1)
 
-    shader.setUniform('curl', 'FLOAT', 25) // vorticity 0 - 50
+    shader.setUniform('curl', 'FLOAT', config.vorticity)
     shader.setUniform('dt', 'FLOAT', dt)
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
@@ -208,7 +215,7 @@ const clearPass = (() => {
     shader.use()
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, pressure.tex)
-    shader.setUniform('value', 'FLOAT', 0.8) // config.PRESSURE
+    shader.setUniform('value', 'FLOAT', config.pressure) // config.PRESSURE
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     pressure.swap()
@@ -273,7 +280,7 @@ const advectionPass = (() => {
     gl.bindTexture(gl.TEXTURE_2D, velocity.tex)
 
     shader.setUniform('dt', 'FLOAT', dt)
-    shader.setUniform('dissipation', 'FLOAT', 1)
+    shader.setUniform('dissipation', 'FLOAT', config.dissipation)
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     velocity.swap()
@@ -296,7 +303,7 @@ const advectionDyePass = (() => {
     gl.bindTexture(gl.TEXTURE_2D, dye.tex)
     shader.setUniform('uSource', 'INT', 1)
     shader.setUniform('dt', 'FLOAT', dt)
-    shader.setUniform('dissipation', 'FLOAT', 0.5)
+    shader.setUniform('dissipation', 'FLOAT', config.dissipationDye)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     dye.swap()
   }
